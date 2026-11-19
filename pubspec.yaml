@@ -1,0 +1,56 @@
+name: kabob
+description: "Kabob – simple, friendly personal budgeting for Cambodia."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  flutter_riverpod: ^2.6.1
+  go_router: ^16.0.0
+  drift: ^2.26.0
+  drift_flutter: ^0.2.4
+  path_provider: ^2.1.5
+  shared_preferences: ^2.3.3
+  fl_chart: ^1.0.0
+  package_info_plus: ^8.3.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.26.0
+  build_runner: ^2.4.15
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/branding/icon.png
+  remove_alpha_ios: true
+  adaptive_icon_background: "#16A34A"
+  adaptive_icon_foreground: assets/branding/icon_foreground.png
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#F7F9F7"
+  image: assets/branding/splash.png
+  android_12:
+    color: "#F7F9F7"
+    image: assets/branding/splash.png
+  ios: true
+  android: true
+  web: false

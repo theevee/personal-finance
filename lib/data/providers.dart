@@ -62,6 +62,7 @@ class SelectedMonthController extends Notifier<int> {
   void previous() => state = MonthKey.previous(state);
   void next() => state = MonthKey.next(state);
   void reset() => state = MonthKey.now();
+  void set(int month) => state = month;
 }
 
 /// Month shared by Home, Budget, Records and Reports.
@@ -75,17 +76,6 @@ final monthTransactionsProvider =
   return ref
       .watch(transactionRepositoryProvider)
       .watchRange(MonthKey.start(month), MonthKey.end(month));
-});
-
-typedef CategoryRange = ({int categoryId, int fromMonth, int toMonth});
-
-final categoryTransactionsProvider =
-    StreamProvider.autoDispose.family<List<TxRecord>, CategoryRange>((ref, r) {
-  return ref.watch(transactionRepositoryProvider).watchRange(
-        MonthKey.start(r.fromMonth),
-        MonthKey.end(r.toMonth),
-        categoryId: r.categoryId,
-      );
 });
 
 final recentTransactionsProvider = StreamProvider.autoDispose<List<TxRecord>>(

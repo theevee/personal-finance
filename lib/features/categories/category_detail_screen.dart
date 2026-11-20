@@ -203,6 +203,7 @@ class _Header extends ConsumerWidget {
   }
 }
 
+/// Daily spending in this category over the selected month.
 class _Trend extends ConsumerWidget {
   const _Trend({required this.category, required this.month});
 
@@ -215,32 +216,42 @@ class _Trend extends ConsumerWidget {
     final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
     final wallets = ref.watch(walletMapProvider);
-    final from = MonthKey.add(month, -5);
-    final txs = ref.watch(
-      categoryTransactionsProvider((categoryId: category.id, fromMonth: from, toMonth: month)),
-    ).valueOrNull;
-    final months = [for (var i = 0; i < 6; i++) MonthKey.add(from, i)];
-    final totals = {for (final m in months) m: 0};
-    for (final tx in txs ?? const <TxRecord>[]) {
-      final key = MonthKey.of(tx.date);
-      if (totals.containsKey(key)) totals[key] = totals[key]! + amountInBase(tx, wallets, settings);
+    final txs = ref.watch(monthTransactionsProvider(month)).valueOrNull ?? const <TxRecord>[];
+    final days = MonthKey.daysIn(month);
+    final totals = List<int>.filled(days + 1, 0);
+    for (final tx in txs) {
+      if (tx.type != TxType.expense || tx.categoryId != category.id) continue;
+      totals[tx.date.day] += amountInBase(tx, wallets, settings);
     }
     final divisor = settings.baseCurrency.decimals == 0 ? 1.0 : 100.0;
-    final maxValue = totals.values.fold<int>(0, math.max) / divisor;
+    final maxValue = totals.fold<int>(0, math.max) / divisor;
     final color = Color(category.color);
+    final now = DateTime.now();
+    final today = MonthKey.of(now) == month ? now.day : null;
+    final labelDays = {1, 8, 15, 22, days};
 
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l.spendingTrend, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l.spendingHistory,
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              TextButton(onPressed: () => context.go('/records'), child: Text(l.seeAll)),
+            ],
+          ),
+          const SizedBox(height: 8),
           SizedBox(
-            height: 140,
+            height: 120,
             child: BarChart(
               BarChartData(
-                maxY: maxValue <= 0 ? 1 : maxValue * 1.2,
-                alignment: BarChartAlignment.spaceAround,
+                maxY: maxValue <= 0 ? 1 : maxValue * 1.15,
+                alignment: BarChartAlignment.spaceBetween,
                 barTouchData: BarTouchData(enabled: false),
                 gridData: const FlGridData(show: false),
                 borderData: FlBorderData(show: false),
@@ -251,14 +262,14 @@ class _Trend extends ConsumerWidget {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 24,
+                      reservedSize: 22,
                       getTitlesWidget: (value, meta) {
-                        final i = value.toInt();
-                        if (i < 0 || i >= months.length) return const SizedBox.shrink();
+                        final d = value.toInt();
+                        if (!labelDays.contains(d)) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
-                            DateFormat.MMM(context.localeTag).format(MonthKey.start(months[i])),
+                            NumberFormat.decimalPattern(context.localeTag).format(d),
                             style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                           ),
                         );
@@ -267,15 +278,20 @@ class _Trend extends ConsumerWidget {
                   ),
                 ),
                 barGroups: [
-                  for (var i = 0; i < months.length; i++)
+                  for (var d = 1; d <= days; d++)
                     BarChartGroupData(
-                      x: i,
+                      x: d,
                       barRods: [
                         BarChartRodData(
-                          toY: totals[months[i]]! / divisor,
-                          width: 18,
-                          color: months[i] == month ? color : color.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(6),
+                          // A stub keeps empty days visible as a baseline.
+                          toY: totals[d] > 0 ? totals[d] / divisor : (maxValue <= 0 ? 1 : maxValue) * 0.03,
+                          width: 6,
+                          color: totals[d] == 0
+                              ? AppColors.track
+                              : d == today
+                                  ? color
+                                  : color.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ],
                     ),

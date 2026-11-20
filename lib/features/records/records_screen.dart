@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kabob/core/l10n/l10n.dart';
 import 'package:kabob/core/money/money.dart';
 import 'package:kabob/core/settings/app_settings.dart';
@@ -55,7 +56,16 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.records)),
+      appBar: AppBar(
+        title: Text(l.records),
+        actions: [
+          IconButton(
+            tooltip: l.myWallets,
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            onPressed: () => context.push('/wallets'),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(

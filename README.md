@@ -33,6 +33,12 @@ Before committing, run the analyzer and the tests. Full output goes to `build/an
 zsh tool/check.sh
 ```
 
+To check the UI without a device, render every main screen in English and Khmer with sample data. The images go to `build/screens/{en,km}/`:
+
+```bash
+zsh tool/render_screens.sh
+```
+
 After changing the database tables in `lib/data/db/database.dart`, regenerate the code:
 
 ```bash

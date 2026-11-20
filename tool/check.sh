@@ -5,6 +5,7 @@ cd "$(dirname "$0")/.."
 F="${FLUTTER:-$(zsh "$(dirname "$0")/find_flutter.sh" 2>/dev/null || command -v flutter)}"
 [[ -x "$F" ]] || { echo "flutter not found; set FLUTTER=/path/to/bin/flutter"; exit 1; }
 mkdir -p build
+"$F" gen-l10n > build/gen-l10n.txt 2>&1 || { cat build/gen-l10n.txt; exit 1; }
 "$F" analyze > build/analyze.txt 2>&1
 "$F" test "$@" > build/test.txt 2>&1
 echo "analyze: $(tail -1 build/analyze.txt)"

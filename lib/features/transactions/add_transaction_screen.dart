@@ -48,6 +48,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   DateTime _date = DateTime.now();
   final _note = TextEditingController();
   bool _loading = false;
+
+  /// The amount keypad. It opens for a new record and closes once a category
+  /// is picked, so wallet, date and note come into view.
+  late bool _keypad = widget.transactionId == null;
   bool _saving = false;
 
   bool get _isEdit => widget.transactionId != null;
@@ -128,6 +132,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       } else {
         _amount = AmountInput.apply(_amount, key, from?.currency ?? ref.read(settingsProvider).baseCurrency);
       }
+    });
+  }
+
+  void _openKeypad(_Target target) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _target = target;
+      _keypad = true;
     });
   }
 
@@ -303,6 +315,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     width: double.infinity,
                     child: SegmentedButton<TxType>(
                       showSelectedIcon: false,
+                      style: SegmentedButton.styleFrom(
+                        selectedBackgroundColor: accent.withValues(alpha: 0.14),
+                        selectedForegroundColor: accent,
+                      ),
                       segments: [
                         ButtonSegment(value: TxType.expense, label: Text(l.expense)),
                         ButtonSegment(value: TxType.income, label: Text(l.income)),
@@ -326,7 +342,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         text: AmountInput.display(_amount, currency),
                         color: accent,
                         active: _target == _Target.amount,
-                        onTap: () => setState(() => _target = _Target.amount),
+                        onTap: () => _openKeypad(_Target.amount),
                       ),
                       if (_type == TxType.transfer) ...[
                         const SizedBox(height: 12),
@@ -351,7 +367,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                             color: AppColors.transfer,
                             active: _target == _Target.received,
                             compact: true,
-                            onTap: () => setState(() => _target = _Target.received),
+                            onTap: () => _openKeypad(_Target.received),
                           ),
                         ],
                         const SizedBox(height: 8),
@@ -364,7 +380,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         _CategoryGrid(
                           categories: categories,
                           selectedId: _categoryId,
-                          onSelected: (id) => setState(() => _categoryId = id),
+                          onSelected: (id) => setState(() {
+                            _categoryId = id;
+                            if (_amount.isNotEmpty) _keypad = false;
+                          }),
                           onAdd: _addCategory,
                         ),
                         const SizedBox(height: 12),
@@ -388,6 +407,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         maxLength: 120,
                         textCapitalization: TextCapitalization.sentences,
                         textInputAction: TextInputAction.done,
+                        onTap: () => setState(() => _keypad = false),
                         decoration: InputDecoration(
                           hintText: l.noteOptional,
                           prefixIcon: const Icon(Icons.edit_note_rounded),
@@ -410,12 +430,30 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            NumericKeypad(
-                              keyHeight: 46,
-                              allowDecimal: keypadCurrency.decimals > 0,
-                              onKey: _onKey,
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOut,
+                              alignment: Alignment.topCenter,
+                              child: _keypad
+                                  ? Column(
+                                      children: [
+                                        NumericKeypad(
+                                          keyHeight: 46,
+                                          allowDecimal: keypadCurrency.decimals > 0,
+                                          onKey: _onKey,
+                                        ),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: TextButton.icon(
+                                            onPressed: () => setState(() => _keypad = false),
+                                            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                                            label: Text(l.done),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : const SizedBox(width: double.infinity),
                             ),
-                            const SizedBox(height: 8),
                             SizedBox(
                               width: double.infinity,
                               child: FilledButton(
@@ -552,12 +590,12 @@ class _CategoryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     return GridView.count(
-      crossAxisCount: 4,
+      crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      childAspectRatio: 0.82,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.15,
       children: [
         for (final c in categories)
           _CategoryCell(
